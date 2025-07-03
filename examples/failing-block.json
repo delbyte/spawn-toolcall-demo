@@ -1,0 +1,6 @@
+{
+  "data": "failed transaction simulation",
+  "simulate_failure": true,
+  "failure_step": "validate",
+  "nonce": 179
+}

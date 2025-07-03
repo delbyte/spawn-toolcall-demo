@@ -26,14 +26,21 @@ const slideInKeyframes = `
     opacity: 1;
   }
 }
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 `;
 
 export function PipelineViewer({ runs }: { runs: any[] }) {
+  const [loggedSteps, setLoggedSteps] = React.useState<Set<string>>(new Set());
+
   const getStatusVariant = (status: string) => {
     switch (status) {
       case 'success':
         return 'lightgreen';
-      case 'failure':
+      case 'failed':
         return 'salmon';
       default:
         return 'lightgray';
@@ -43,43 +50,42 @@ export function PipelineViewer({ runs }: { runs: any[] }) {
   // Log network-style messages to console to simulate tool call execution
   React.useEffect(() => {
     runs.forEach((run) => {
-      const completedSteps = run.steps.filter((s: any) => s.status === 'success').length;
-      const runningSteps = run.steps.filter((s: any) => s.status === 'running').length;
-      const totalSteps = run.steps.length;
-      
-      // Log overall pipeline state
-      if (runningSteps > 0) {
-        console.log(`%c[PIPELINE] Run ${run.id} - Step ${completedSteps + 1}/${totalSteps} executing...`, 'color: #6f42c1; font-weight: bold;');
-      }
-      
       run.steps.forEach((step: any, index: number) => {
-        if (step.status === 'running') {
-          console.log(`%c[TOOL-CALL] toolu_${Date.now().toString().slice(-8)} - ${step.name} - Status: RUNNING`, 'color: #007bff; font-weight: bold;');
-          console.log(`%c[NETWORK] POST /api/tools/${step.name} - Starting execution`, 'color: #28a745;');
-          console.log(`%c[STATE] Pipeline state: step ${index + 1} of ${totalSteps} - ${step.name} in progress`, 'color: #6c757d; font-style: italic;');
-        } else if (step.status === 'success') {
-          console.log(`%c[TOOL-CALL] toolu_${Date.now().toString().slice(-8)} - ${step.name} - Status: COMPLETED ✓`, 'color: #28a745; font-weight: bold;');
-          console.log(`%c[NETWORK] POST /api/tools/${step.name} - 200 OK (${Math.floor(Math.random() * 1000 + 500)}ms)`, 'color: #28a745;');
-          console.log(`%c[STATE] Pipeline advancing: ${step.name} complete, progressing to next step...`, 'color: #6c757d; font-style: italic;');
+        const stepKey = `${run.id}-${step.name}-${step.status}`;
+        
+        // Only log if we haven't logged this step status before
+        if (!loggedSteps.has(stepKey)) {
+          setLoggedSteps(prev => new Set(prev).add(stepKey));
           
-          // Show next step preparation
-          if (index < totalSteps - 1) {
-            const nextStep = run.steps[index + 1];
-            if (nextStep.status === 'pending') {
-              console.log(`%c[PIPELINE] Preparing next step: ${nextStep.name}`, 'color: #6f42c1;');
+          if (step.status === 'running') {
+            console.log(`%c[PIPELINE] Run ${run.id} - Step ${index + 1}/${run.steps.length} executing...`, 'color: #6f42c1; font-weight: bold;');
+            console.log(`%c[TOOL-CALL] toolu_${Date.now().toString().slice(-8)} - ${step.name} - Status: RUNNING`, 'color: #007bff; font-weight: bold;');
+            console.log(`%c[NETWORK] POST /api/tools/${step.name} - Starting execution`, 'color: #28a745;');
+            console.log(`%c[STATE] Pipeline state: step ${index + 1} of ${run.steps.length} - ${step.name} in progress`, 'color: #6c757d; font-style: italic;');
+          } else if (step.status === 'success') {
+            console.log(`%c[TOOL-CALL] toolu_${Date.now().toString().slice(-8)} - ${step.name} - Status: COMPLETED ✓`, 'color: #28a745; font-weight: bold;');
+            console.log(`%c[NETWORK] POST /api/tools/${step.name} - 200 OK (${Math.floor(Math.random() * 1000 + 500)}ms)`, 'color: #28a745;');
+            console.log(`%c[STATE] Pipeline advancing: ${step.name} complete, progressing to next step...`, 'color: #6c757d; font-style: italic;');
+            
+            // Show next step preparation or completion
+            if (index < run.steps.length - 1) {
+              const nextStep = run.steps[index + 1];
+              if (nextStep.status === 'pending') {
+                console.log(`%c[PIPELINE] Preparing next step: ${nextStep.name}`, 'color: #6f42c1;');
+              }
+            } else {
+              console.log(`%c[PIPELINE] Run ${run.id} - All steps completed successfully! 🎉`, 'color: #28a745; font-weight: bold;');
             }
-          } else {
-            console.log(`%c[PIPELINE] Run ${run.id} - All steps completed successfully! 🎉`, 'color: #28a745; font-weight: bold;');
+          } else if (step.status === 'failed') {
+            console.log(`%c[TOOL-CALL] toolu_${Date.now().toString().slice(-8)} - ${step.name} - Status: FAILED ✗`, 'color: #dc3545; font-weight: bold;');
+            console.log(`%c[NETWORK] POST /api/tools/${step.name} - 500 Internal Server Error`, 'color: #dc3545;');
+            console.log(`%c[ERROR] ${step.error}`, 'color: #dc3545;');
+            console.log(`%c[PIPELINE] Run ${run.id} - Pipeline halted at step ${index + 1}`, 'color: #dc3545; font-weight: bold;');
           }
-        } else if (step.status === 'failed') {
-          console.log(`%c[TOOL-CALL] toolu_${Date.now().toString().slice(-8)} - ${step.name} - Status: FAILED ✗`, 'color: #dc3545; font-weight: bold;');
-          console.log(`%c[NETWORK] POST /api/tools/${step.name} - 500 Internal Server Error`, 'color: #dc3545;');
-          console.log(`%c[ERROR] ${step.error}`, 'color: #dc3545;');
-          console.log(`%c[PIPELINE] Run ${run.id} - Pipeline halted at step ${index + 1}`, 'color: #dc3545; font-weight: bold;');
         }
       });
     });
-  }, [runs]);
+  }, [runs, loggedSteps]);
 
   return (
     <>
@@ -120,7 +126,7 @@ export function PipelineViewer({ runs }: { runs: any[] }) {
                         border: '1px solid #ddd',
                         borderRadius: '8px',
                         backgroundColor: getStatusVariant(step.status),
-                        color: step.status === 'failed' ? 'white' : '#333',
+                        color: '#333',
                         minWidth: '120px',
                         textAlign: 'center',
                         boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
@@ -156,16 +162,31 @@ export function PipelineViewer({ runs }: { runs: any[] }) {
                         <strong style={{ marginBottom: '5px' }}>{step.name}</strong>
                         <span style={{ fontSize: '0.9em', opacity: 0.8 }}>{step.status.toUpperCase()}</span>
                         {step.status === 'running' && (
-                          <span style={{ fontSize: '0.7em', color: '#007bff', marginTop: '3px' }}>
-                            Tool call in progress...
-                          </span>
+                          <div style={{ 
+                            fontSize: '0.7em', 
+                            color: '#007bff', 
+                            marginTop: '5px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px'
+                          }}>
+                            <div style={{
+                              width: '12px',
+                              height: '12px',
+                              border: '2px solid #007bff',
+                              borderTop: '2px solid transparent',
+                              borderRadius: '50%',
+                              animation: 'spin 1s linear infinite'
+                            }}></div>
+                            <span>Tool call executing...</span>
+                          </div>
                         )}
                         {step.status === 'success' && (
                           <span style={{ fontSize: '0.7em', color: '#28a745', marginTop: '3px' }}>
                             Tool call completed ✓
                           </span>
                         )}
-                        {step.error && <p style={{ color: 'darkred', fontSize: '0.8em', marginTop: '5px' }}>Error: {step.error}</p>}
+                        {step.error && <p style={{ color: '#8B0000', fontSize: '0.8em', marginTop: '5px', fontWeight: 'bold' }}>Error: {step.error}</p>}
                         {(step.input || step.output) && (
                           <details style={{ marginTop: '10px', width: '100%' }}>
                             <summary style={{ cursor: 'pointer', fontSize: '0.9em', color: '#007bff' }}>Details</summary>

@@ -1,0 +1,8 @@
+{
+  "data": "high-value transaction",
+  "amount": 1000000,
+  "priority": "high",
+  "security_level": "maximum",
+  "verification_required": true,
+  "nonce": 535658
+}
