@@ -1,6 +1,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { getState, addRun, updateRun } from './StateManager';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import { mineBlock } from './tools/mineBlock';
@@ -25,19 +26,7 @@ export interface PipelineRun {
   steps: PipelineStep[];
 }
 
-const STATE_PATH = path.resolve(process.cwd(), 'state.json');
-
-function loadState(): { runs: PipelineRun[] } {
-  if (!fs.existsSync(STATE_PATH)) return { runs: [] };
-  return JSON.parse(fs.readFileSync(STATE_PATH, 'utf-8'));
-}
-
-function saveState(state: { runs: PipelineRun[] }) {
-  fs.writeFileSync(STATE_PATH, JSON.stringify(state, null, 2));
-}
-
 export async function runPipeline(inputPath: string) {
-  const state = loadState();
   const run: PipelineRun = {
     id: Date.now().toString(),
     inputPath,
@@ -47,32 +36,31 @@ export async function runPipeline(inputPath: string) {
       { name: 'broadcastBlock', status: 'pending' }
     ]
   };
-  state.runs.push(run);
-  saveState(state);
+  
+  // Add run to in-memory state
+  addRun(run);
+
+  // Read the initial input file
+  let currentData = JSON.parse(fs.readFileSync(inputPath, 'utf-8'));
 
   for (const step of run.steps) {
     step.status = 'running';
-    let stepInput: any = null;
-    let stepOutput: any = null;
+    step.input = currentData;
+    updateRun(run.id, run); // Update state after setting input
 
     try {
-      // Read input file content before each step
-      stepInput = fs.readFileSync(inputPath, 'utf-8');
-      step.input = JSON.parse(stepInput);
-      saveState(state);
+      let stepOutput: any = null;
 
       switch (step.name) {
         case 'mineBlock':
-          await mineBlock(inputPath);
-          stepOutput = fs.readFileSync(inputPath, 'utf-8'); // Read updated file after mineBlock
+          stepOutput = await mineBlock(inputPath);
+          currentData = stepOutput; // Update current data with mined block
           break;
         case 'validateBlock':
-          await validateBlock(inputPath);
-          stepOutput = 'Block validated successfully';
+          stepOutput = await validateBlock(currentData);
           break;
         case 'broadcastBlock':
-          await broadcastBlock(inputPath);
-          stepOutput = 'Block broadcast successfully';
+          stepOutput = await broadcastBlock(currentData);
           break;
       }
       step.output = stepOutput;
@@ -80,9 +68,9 @@ export async function runPipeline(inputPath: string) {
     } catch (err: any) {
       step.status = 'failed';
       step.error = err.message;
-      saveState(state);
+      updateRun(run.id, run); // Update state after error
       throw err;
     }
-    saveState(state);
+    updateRun(run.id, run); // Update state after successful step
   }
 }

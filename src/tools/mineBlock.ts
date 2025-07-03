@@ -1,7 +1,7 @@
 import fs from 'fs';
 import crypto from 'crypto';
 
-export async function mineBlock(inputPath: string) {
+export async function mineBlock(inputPath: string): Promise<any> {
   const data = JSON.parse(fs.readFileSync(inputPath, 'utf-8'));
   
   // Check for failure simulation
@@ -36,8 +36,8 @@ export async function mineBlock(inputPath: string) {
     throw new Error(`Mining failed: Could not find valid nonce within ${maxIterations} iterations`);
   }
   
-  // Save the nonce back to the data
-  data.nonce = testNonce;
-  fs.writeFileSync(inputPath, JSON.stringify(data, null, 2));
+  // Return the updated data instead of writing to file
+  const minedData = { ...data, nonce: testNonce };
   console.log(`Mined with nonce=${testNonce} (difficulty: ${difficulty})`);
+  return minedData;
 }
