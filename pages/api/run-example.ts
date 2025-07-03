@@ -29,9 +29,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(200).json({ 
       message: `Pipeline started successfully for ${example}`,
       path: examplePath 
-    });
-  } catch (error: any) {
-    console.error('Error running example:', error);
-    res.status(500).json({ error: error.message });
+    });    } catch (error: unknown) {
+      console.error('Error running example:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
   }
 }
