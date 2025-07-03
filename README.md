@@ -184,13 +184,6 @@ The demo includes realistic network-style logging in the browser console:
 - **⚡ Fast Performance** - Optimized for quick feedback
 - **🎭 Failure Simulation** - Shows how errors are handled
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
