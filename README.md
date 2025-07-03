@@ -138,28 +138,6 @@ The dashboard polls the state every 2 seconds and shows:
 - ❌ Failed steps (red with error message)
 - 📊 Progress indicators and network logging
 
-## 🌐 Deploy to Vercel
-
-### Method 1: GitHub Integration
-1. Push your code to GitHub
-2. Connect your GitHub repo to Vercel
-3. Deploy automatically on push
-
-### Method 2: Vercel CLI
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy to Vercel
-vercel --prod
-```
-
-### Method 3: Import from GitHub
-1. Go to [vercel.com](https://vercel.com)
-2. Click "New Project"
-3. Import from GitHub
-4. Deploy
-
 ## 📊 Network Logging
 
 The demo includes realistic network-style logging in the browser console:
