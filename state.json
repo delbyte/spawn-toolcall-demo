@@ -1,0 +1,37 @@
+{
+  "runs": [
+    {
+      "id": "1751553323797",
+      "inputPath": "examples/sample-block.json",
+      "steps": [
+        {
+          "name": "mineBlock",
+          "status": "success",
+          "input": {
+            "data": "example payload",
+            "nonce": 75577
+          },
+          "output": "{\n  \"data\": \"example payload\",\n  \"nonce\": 75577\n}"
+        },
+        {
+          "name": "validateBlock",
+          "status": "success",
+          "input": {
+            "data": "example payload",
+            "nonce": 75577
+          },
+          "output": "Block validated successfully"
+        },
+        {
+          "name": "broadcastBlock",
+          "status": "success",
+          "input": {
+            "data": "example payload",
+            "nonce": 75577
+          },
+          "output": "Block broadcast successfully"
+        }
+      ]
+    }
+  ]
+}
